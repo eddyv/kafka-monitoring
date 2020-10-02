@@ -1,0 +1,70 @@
+version: "3.2"
+services:
+  prometheus:
+    hostname: prometheus
+    container_name: prometheus
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+
+  grafana:
+    hostname: grafana
+    container_name: grafana
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana:/var/lib/grafana
+
+  zookeeper:
+    image: wurstmeister/zookeeper:latest
+    hostname: zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+
+  kafka1:
+    build: .
+    hostname: kafka1
+    container_name: kafka1
+    cpus: 0.7
+    depends_on:
+      - zookeeper
+    ports:
+      - "9095:9092"
+      - "7072:7072"
+    environment:
+      KAFKA_LISTENERS: PLAINTEXT://:9095
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka1:9095
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LOG_DIRS: /kafka/logs
+      KAFKA_BROKER_ID: 1
+      KAFKA_BROKER_RACK: "r1"
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 2
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+      KAFKA_offsets_topic_replication_factor: 3
+      KAFKA_OPTS: -javaagent:/usr/app/jmx_prometheus_javaagent.jar=7072:/usr/app/prom-jmx-agent-config.yml
+
+  kafka2:
+    build: .
+    hostname: kafka2
+    container_name: kafka2
+    cpus: 0.7
+    depends_on:
+      - zookeeper
+    ports:
+      - "9096:9093"
+    environment:
+      KAFKA_LISTENERS: PLAINTEXT://:9096
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka2:9096
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LOG_DIRS: /kafka/logs
+      KAFKA_BROKER_ID: 2
+      KAFKA_BROKER_RACK: "r2"
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 2
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+      KAFKA_OPTS: -javaagent:/usr/app/jmx_prometheus_javaagent.jar=7072:/usr/app/prom-jmx-agent-config.yml
+
+
